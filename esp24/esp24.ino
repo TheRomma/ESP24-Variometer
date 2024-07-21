@@ -5,6 +5,9 @@
 #include "buzzer.hpp"
 #include "display.hpp"
 #include "imu.hpp"
+#include "NuPacket.hpp"
+#include "NimBLEDevice.h"
+#include "nmea.hpp"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 #define SLEEP_INTERVAL 5 //Sleep interval for updates in ms. Larger intervals should count multiples of SLEEP_INTERVAL.
@@ -86,26 +89,50 @@ void setup() {
 
   val = -199;
   idler = 0;
+  
+  NimBLEDevice::init("SENDING DATA IN NMEA PROTOCOL");
+  NuPacket.start();
 }
 
 void loop() {
-  
-  if (! bmp.performReading()) {
-    Serial.println("Failed to perform reading :(");
-    return;
+  if (NuPacket.connect()) 
+  {
+    if (! bmp.performReading()) {
+      Serial.println("Failed to perform reading :(");
+      return;
+    }
+    float number1 = 1;
+    float number2 = 2;
+
+    std::string nmea_message = setNmeaShortLXWP0(number1, number2);
+    NuPacket.send("Data from sensors in NMEA format");
+  }
+  else
+  {
+    Serial.println("--Waiting for connection--");
+    while (!NuPacket.connect())
+        delay(500);
+    Serial.println("--Connected--");
   }
 
-  // printBaroData(&bmp);
-  sBmx160SensorData_t Omagn, Ogyro, Oaccel;
+
+  // if (! bmp.performReading()) {
+  //   Serial.println("Failed to perform reading :(");
+  //   return;
+  // }
+
+  // // printBaroData(&bmp);
+  // sBmx160SensorData_t Omagn, Ogyro, Oaccel;
   
-  imu.getAllData(&Omagn, &Ogyro, &Oaccel);
-  // imu.printAllData(&Omagn, &Ogyro, &Oaccel);
+  // imu.getAllData(&Omagn, &Ogyro, &Oaccel);
+  // // imu.printAllData(&Omagn, &Ogyro, &Oaccel);
 
-  //Updates every SLEEP_INTERVAL.
-  idler = (idler+1)%10;
-  if(idler == 0)val++;
-  display.write(val);
-  buzzer.play(val);
+  // //Updates every SLEEP_INTERVAL.
+  // idler = (idler+1)%10;
+  // if(idler == 0)val++;
+  // display.write(val);
+  // buzzer.play(val);
 
-  delay(SLEEP_INTERVAL);
+  // delay(SLEEP_INTERVAL);
+
 }
