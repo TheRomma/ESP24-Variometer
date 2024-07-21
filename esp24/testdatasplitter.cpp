@@ -46,6 +46,8 @@ void testDataSplitter::get_test_data(*float x_acc, *float y_acc, *float z_acc, *
 
 	baro = baro_raw[counter];
 
+	up_acc = vel_down[counter] * -1;
+
 	ts = t[counter];
 
 	counter++;
