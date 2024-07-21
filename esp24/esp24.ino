@@ -7,6 +7,7 @@
 #include "imu.hpp"
 #include "NuPacket.hpp"
 #include "NimBLEDevice.h"
+#include "nmea.hpp"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 #define SLEEP_INTERVAL 5 //Sleep interval for updates in ms. Larger intervals should count multiples of SLEEP_INTERVAL.
@@ -96,6 +97,14 @@ void setup() {
 void loop() {
   if (NuPacket.connect()) 
   {
+    if (! bmp.performReading()) {
+      Serial.println("Failed to perform reading :(");
+      return;
+    }
+    float number1 = 1;
+    float number2 = 2;
+
+    std::string nmea_message = setNmeaShortLXWP0(number1, number2);
     NuPacket.send("Data from sensors in NMEA format");
   }
   else
@@ -105,6 +114,8 @@ void loop() {
         delay(500);
     Serial.println("--Connected--");
   }
+
+
   // if (! bmp.performReading()) {
   //   Serial.println("Failed to perform reading :(");
   //   return;
@@ -123,4 +134,5 @@ void loop() {
   // buzzer.play(val);
 
   // delay(SLEEP_INTERVAL);
+
 }
