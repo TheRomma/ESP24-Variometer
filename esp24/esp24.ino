@@ -90,22 +90,30 @@ void setup() {
   val = -199;
   idler = 0;
   
-  NimBLEDevice::init("SENDING DATA IN NMEA PROTOCOL");
+  NimBLEDevice::init("Variometer");
   NuPacket.start();
 }
 
 void loop() {
+
+  float prev_height = 0;
+  float cur_height = 0;
+  float climb_rate = 0;
+
   if (NuPacket.connect()) 
   {
     if (! bmp.performReading()) {
       Serial.println("Failed to perform reading :(");
       return;
     }
-    float number1 = 1;
-    float number2 = 2;
 
-    std::string nmea_message = setNmeaShortLXWP0(number1, number2);
-    NuPacket.send("Data from sensors in NMEA format");
+    cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA)
+    climb_rate = cur_height - prev_height
+
+    std::string nmea_message = setNmeaShortLXWP0(cur_height, climb_rate);
+    NuPacket.send(nmea_message);
+    display.write(val);
+    buzzer.play(val);
   }
   else
   {

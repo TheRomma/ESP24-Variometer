@@ -1,2 +1,4 @@
 Arduino IDE
-adafruit_3xx library
+adafruit BMP3xx library
+ESP32 board library
+DFRobot_BMX160
