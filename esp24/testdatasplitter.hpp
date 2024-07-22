@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <vector>
 
 struct TestData
 {
@@ -18,6 +19,18 @@ struct testDataSplitter
 {
 	testDataSplitter();
 	~testDataSplitter();
+
+	std::vector<float> imu_x;
+	std::vector<float> imu_y;
+	std::vector<float> imu_z;
+
+	std::vector<float> imu_x_gyro;
+	std::vector<float> imu_y_gyro;
+	std::vector<float> imu_z_gyro;
+
+	std::vector<float> baro_raw;
+
+	std::vector<float> vel_down;
 
 	uint8_t small_counter;
 	uint16_t counter;
