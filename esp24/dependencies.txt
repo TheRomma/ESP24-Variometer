@@ -1,4 +1,7 @@
 Arduino IDE
-adafruit BMP3xx library
-ESP32 board library
-DFRobot_BMX160
+    ESP32 board 
+    adafruit BMP3xx
+    DFRobot_BMX160
+    NuS-Nimble-Serial
+        - Delete row in NuS.cpp that has std::runtime_error
+        - Delete row in NuATCommands.cpp that has std::runtime_error
