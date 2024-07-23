@@ -25,8 +25,6 @@ Adafruit_BMP3XX bmp;
 float prev_height = 0;
 float cur_height = 0;
 float climb_rate = 0;
-bool display_ready = true;
-hw_timer_t *Timer0_Cfg = NULL;
 
 void printBaroData(Adafruit_BMP3XX *bmp)
 {
@@ -42,9 +40,6 @@ void printBaroData(Adafruit_BMP3XX *bmp)
   Serial.print(bmp->readAltitude(SEALEVELPRESSURE_HPA));
   Serial.println(" m");
   Serial.println();
-}
-void IRAM_ATTR Timer0_ISR() {
-  display_ready = true;
 }
 
 void setup() {
@@ -67,15 +62,7 @@ void setup() {
       delay(1000);
     }
   }
-  if (!bmp.begin_I2C(0x76, &WIRE)) {
-    Serial.println("Could not find a valid BMP3 sensor, check wiring!");
-    while (1) {
-      neopixelWrite(RGB_BUILTIN, RGB_BRIGHTNESS, 0, 0);  // Red
-      delay(1000);
-      neopixelWrite(RGB_BUILTIN, 0, 0, 0);  // Off / black
-      delay(1000);
-    }
-  }
+
 
   if (imu.begin() != true){
     Serial.println("imu init false");
@@ -87,19 +74,31 @@ void setup() {
     }
   }
 
+
+  if (!bmp.begin_I2C(0x76, &WIRE)) {
+    Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+    while (1) {
+      neopixelWrite(RGB_BUILTIN, RGB_BRIGHTNESS, 0, 0);  // Red
+      delay(1000);
+      neopixelWrite(RGB_BUILTIN, 0, 0, 0);  // Off / black
+      delay(1000);
+    }
+  }
   // Set up oversampling and filter initialization
   bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
   bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
-  bmp.setOutputDataRate(BMP3_ODR_50_HZ);
-  
+  bmp.setOutputDataRate(BMP3_ODR_200_HZ);
+  if (! bmp.performReading()) {
+      Serial.println("Failed to perform reading :(");
+      return;
+  }
+  prev_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+
+
   NimBLEDevice::init("Variometer");
   NuPacket.start();
 
-
-  Timer0_Cfg = timerBegin(80);
-  timerAttachInterrupt(Timer0_Cfg, &Timer0_ISR);
-  timerAlarm(Timer0_Cfg, 1000000, true, 100000);
 }
 
 void loop() {
@@ -110,22 +109,20 @@ void loop() {
   }
   cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
   climb_rate = cur_height - prev_height;
+  prev_height = cur_height;
 
   if (NuPacket.connect()) 
   {
+    Serial.println("BT Connected")
     std::string nmea_message = setNmeaShortLXWP0(cur_height, climb_rate);
     NuPacket.send(nmea_message.c_str());
   }
   else
   {
-    if (display_ready) {
-      int climb_rate_dm = static_cast<int>(climb_rate*10);
-      display.write(climb_rate_dm);
-      buzzer.play(climb_rate_dm);
-      display_ready = false;
-    }
+    int climb_rate_dm = static_cast<int>(climb_rate*10);
+    display.write(climb_rate_dm);
+    buzzer.play(climb_rate_dm);
   }
-
 
   // if (! bmp.performReading()) {
   //   Serial.println("Failed to perform reading :(");

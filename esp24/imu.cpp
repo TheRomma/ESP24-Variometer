@@ -5,7 +5,7 @@
  * @license     The MIT License (MIT)
  * @author [luoyufeng] (yufeng.luo@dfrobot.com)
  * @maintainer [Fary](feng.yang@dfrobot.com)
-c:\Users\ville\Desktop\ESP24-Variometer-main\ESP24-Variometer-main\esp24\imu.hpp * @version  V1.0
+ * @version  V1.0
  * @date  2021-10-20
  * @url https://github.com/DFRobot/DFRobot_BMX160
  */
