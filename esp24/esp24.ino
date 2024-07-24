@@ -25,7 +25,9 @@ Adafruit_BMP3XX bmp;
 float prev_height = 0;
 float cur_height = 0;
 float climb_rate = 0;
-int gum_fix_counter = 0;
+
+TaskHandle_t measBaro_handle = NULL;
+TaskHandle_t showResult_handle = NULL;
 
 void printBaroData(Adafruit_BMP3XX *bmp)
 {
@@ -41,6 +43,31 @@ void printBaroData(Adafruit_BMP3XX *bmp)
   Serial.print(bmp->readAltitude(SEALEVELPRESSURE_HPA));
   Serial.println(" m");
   Serial.println();
+}
+
+void measBaro(void *parameters) {
+  for (;;) {
+    if (! bmp.performReading()) {
+          Serial.println("Failed to perform reading :(");
+          return;
+    }
+    cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+    climb_rate = cur_height - prev_height;
+    prev_height = cur_height;
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+  }
+}
+void showResult(void *parameters) {
+  for (;;) {
+    int climb_rate_dm = static_cast<int>(climb_rate*10);
+    for (size_t i = 0; i < 4; i++)
+    {
+      display.write(climb_rate_dm);
+      buzzer.play(climb_rate_dm);
+      delay(1);
+    }
+    vTaskDelay(5 / portTICK_PERIOD_MS);
+  }
 }
 
 void setup() {
@@ -89,7 +116,7 @@ void setup() {
   bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
   bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
-  bmp.setOutputDataRate(BMP3_ODR_200_HZ);
+  bmp.setOutputDataRate(BMP3_ODR_3_1_HZ);
   if (! bmp.performReading()) {
       Serial.println("Failed to perform reading :(");
       return;
@@ -101,48 +128,51 @@ void setup() {
   NimBLEDevice::init("Variometer");
   NuPacket.start();
 
+  xTaskCreate(
+                  measBaro,          /* Task function. */
+                  "measBaro",        /* String with name of task. */
+                  10000,            /* Stack size in bytes. */
+                  NULL,             /* Parameter passed as input of the task */
+                  1,                /* Priority of the task. */
+                  &measBaro_handle);            /* Task handle. */
+  xTaskCreate(
+                  showResult,          /* Task function. */
+                  "showResult",        /* String with name of task. */
+                  10000,            /* Stack size in bytes. */
+                  NULL,             /* Parameter passed as input of the task */
+                  1,                /* Priority of the task. */
+                  &showResult_handle);            /* Task handle. */
+                  
+  Serial.println("Setup Done");             
 }
 
 void loop() {
-  if (gum_fix_counter % 100 == 0) {
-    if (! bmp.performReading()) {
-        Serial.println("Failed to perform reading :(");
-        return;
-    }
-    cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
-    climb_rate = cur_height - prev_height;
-    prev_height = cur_height;
-    gum_fix_counter = 1;
-  }
 
-  if (NuPacket.connect(5)) 
+  if (NuPacket.connect(2000) | NuPacket.isConnected()) 
   {
-    Serial.println("BT Connected");
+    if (showResult_handle != NULL) {
+      vTaskSuspend(showResult_handle);
+      display.reset();
+      buzzer.stop();
+    }
+
+    Serial.println("BT is Connected, sending data via BLE");
     std::string nmea_message = setNmeaShortLXWP0(cur_height, climb_rate);
     NuPacket.send(nmea_message.c_str());
   }
   else
   {
-    int climb_rate_dm = static_cast<int>(climb_rate*10);
-    for (size_t i = 0; i < 4; i++)
-    {
-      display.write(climb_rate_dm);
-      buzzer.play(climb_rate_dm);
-      delay(SLEEP_INTERVAL)
-    }
+    Serial.println("BT is not Connected, normal OP");
+    if (showResult_handle != NULL) vTaskResume(showResult_handle);
   }
 
   // if (! bmp.performReading()) {
   //   Serial.println("Failed to perform reading :(");
   //   return;
   // }
-
   // // printBaroData(&bmp);
   // sBmx160SensorData_t Omagn, Ogyro, Oaccel;
-  
   // imu.getAllData(&Omagn, &Ogyro, &Oaccel);
   // // imu.printAllData(&Omagn, &Ogyro, &Oaccel);
 
-  gum_fix_counter++;
-  delay(SLEEP_INTERVAL);
 }
