@@ -25,6 +25,7 @@ Adafruit_BMP3XX bmp;
 float prev_height = 0;
 float cur_height = 0;
 float climb_rate = 0;
+int gum_fix_counter = 0;
 
 void printBaroData(Adafruit_BMP3XX *bmp)
 {
@@ -94,7 +95,8 @@ void setup() {
       return;
   }
   prev_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
-
+  cur_height = prev_height;
+  climb_rate = 0;
 
   NimBLEDevice::init("Variometer");
   NuPacket.start();
@@ -102,26 +104,32 @@ void setup() {
 }
 
 void loop() {
-
-  if (! bmp.performReading()) {
-      Serial.println("Failed to perform reading :(");
-      return;
+  if (gum_fix_counter % 100 == 0) {
+    if (! bmp.performReading()) {
+        Serial.println("Failed to perform reading :(");
+        return;
+    }
+    cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+    climb_rate = cur_height - prev_height;
+    prev_height = cur_height;
+    gum_fix_counter = 1;
   }
-  cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
-  climb_rate = cur_height - prev_height;
-  prev_height = cur_height;
 
-  if (NuPacket.connect()) 
+  if (NuPacket.connect(5)) 
   {
-    Serial.println("BT Connected")
+    Serial.println("BT Connected");
     std::string nmea_message = setNmeaShortLXWP0(cur_height, climb_rate);
     NuPacket.send(nmea_message.c_str());
   }
   else
   {
     int climb_rate_dm = static_cast<int>(climb_rate*10);
-    display.write(climb_rate_dm);
-    buzzer.play(climb_rate_dm);
+    for (size_t i = 0; i < 4; i++)
+    {
+      display.write(climb_rate_dm);
+      buzzer.play(climb_rate_dm);
+      delay(SLEEP_INTERVAL)
+    }
   }
 
   // if (! bmp.performReading()) {
@@ -135,6 +143,6 @@ void loop() {
   // imu.getAllData(&Omagn, &Ogyro, &Oaccel);
   // // imu.printAllData(&Omagn, &Ogyro, &Oaccel);
 
-
+  gum_fix_counter++;
   delay(SLEEP_INTERVAL);
 }
