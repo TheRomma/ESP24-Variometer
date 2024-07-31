@@ -15,6 +15,10 @@
 #define WIRE Wire
 #define I2C_SDA 48
 #define I2C_SCL 0
+#define BATMEAS 13
+#define BATMEAS_EN 14
+
+#define MEASUREBATTERY 1
 
 //System declarations.
 DFRobot_BMX160 imu(&WIRE);
@@ -28,6 +32,8 @@ float climb_rate = 0;
 
 TaskHandle_t measBaro_handle = NULL;
 TaskHandle_t showResult_handle = NULL;
+TaskHandle_t measBatt_handle = NULL;
+
 
 void printBaroData(Adafruit_BMP3XX *bmp)
 {
@@ -69,6 +75,13 @@ void showResult(void *parameters) {
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }
 }
+void measBatt(void *parameters) {
+  for (;;) {
+    Serial.println("Measuring battery...");
+    Serial.println(analogRead(BATMEAS));
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -91,7 +104,6 @@ void setup() {
     }
   }
 
-
   if (imu.begin() != true){
     Serial.println("imu init false");
     while(1) {
@@ -101,7 +113,6 @@ void setup() {
       delay(1000);
     }
   }
-
 
   if (!bmp.begin_I2C(0x76, &WIRE)) {
     Serial.println("Could not find a valid BMP3 sensor, check wiring!");
@@ -129,20 +140,35 @@ void setup() {
   NuPacket.start();
 
   xTaskCreate(
-                  measBaro,          /* Task function. */
-                  "measBaro",        /* String with name of task. */
-                  10000,            /* Stack size in bytes. */
-                  NULL,             /* Parameter passed as input of the task */
-                  1,                /* Priority of the task. */
-                  &measBaro_handle);            /* Task handle. */
+                  measBaro,           /* Task function. */
+                  "measBaro",         /* String with name of task. */
+                  10000,              /* Stack size in bytes. */
+                  NULL,               /* Parameter passed as input of the task */
+                  1,                  /* Priority of the task. */
+                  &measBaro_handle);  /* Task handle. */
   xTaskCreate(
-                  showResult,          /* Task function. */
-                  "showResult",        /* String with name of task. */
-                  10000,            /* Stack size in bytes. */
-                  NULL,             /* Parameter passed as input of the task */
-                  1,                /* Priority of the task. */
-                  &showResult_handle);            /* Task handle. */
-                  
+                  showResult,         /* Task function. */
+                  "showResult",       /* String with name of task. */
+                  10000,              /* Stack size in bytes. */
+                  NULL,               /* Parameter passed as input of the task */
+                  1,                  /* Priority of the task. */
+                  &showResult_handle);/* Task handle. */
+  
+  pinMode(BATMEAS_EN, OUTPUT);
+  if (MEASUREBATTERY == true) 
+  {
+    digitalWrite(BATMEAS_EN, HIGH);
+    xTaskCreate(
+                measBatt,           /* Task function. */
+                "measBatt",         /* String with name of task. */
+                10000,              /* Stack size in bytes. */
+                NULL,               /* Parameter passed as input of the task */
+                1,                  /* Priority of the task. */
+                &measBatt_handle);  /* Task handle. */
+  }
+  else digitalWrite(BATMEAS_EN, LOW);
+
+
   Serial.println("Setup Done");             
 }
 
@@ -155,7 +181,6 @@ void loop() {
       display.reset();
       buzzer.stop();
     }
-
     Serial.println("BT is Connected, sending data via BLE");
     std::string nmea_message = setNmeaShortLXWP0(cur_height, climb_rate);
     NuPacket.send(nmea_message.c_str());
