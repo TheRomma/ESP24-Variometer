@@ -65,3 +65,6 @@ void Buzzer::play(int32_t value){
     tone(BUZZER_0, freq);
   }
 }
+void Buzzer::stop(void) {
+  noTone(BUZZER_0);
+}
