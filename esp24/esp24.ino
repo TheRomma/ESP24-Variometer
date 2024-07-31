@@ -65,13 +65,11 @@ void measBaro(void *parameters) {
 }
 void showResult(void *parameters) {
   for (;;) {
-    int climb_rate_dm = static_cast<int>(climb_rate*10);
-    for (size_t i = 0; i < 4; i++)
-    {
-      display.write(climb_rate_dm);
-      buzzer.play(climb_rate_dm);
-      delay(1);
-    }
+    int climb_rate_dm = static_cast<int>(climb_rate*100);
+
+    display.write(climb_rate_dm);
+    buzzer.play(climb_rate_dm);
+    
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }
 }
