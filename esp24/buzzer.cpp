@@ -57,7 +57,8 @@ void Buzzer::play(int32_t value){
     if(toggle){
       tone(BUZZER_0, freq);
     }else{
-      noTone(BUZZER_0);
+      //noTone(BUZZER_0);
+      tone(BUZZER_0, 1500);
     }
     
   //Descending velocity.
