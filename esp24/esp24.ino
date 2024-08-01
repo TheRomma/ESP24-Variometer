@@ -9,6 +9,12 @@
 #include "NimBLEDevice.h"
 #include "nmea.hpp"
 
+#include "testdatasplitter.hpp"
+
+/*
+This versio includes tests, this code shouldn't be in the main branch!
+*/
+
 #define SEALEVELPRESSURE_HPA (1013.25)
 #define SLEEP_INTERVAL 5 //Sleep interval for updates in ms. Larger intervals should count multiples of SLEEP_INTERVAL.
 
@@ -34,6 +40,8 @@ TaskHandle_t measBaro_handle = NULL;
 TaskHandle_t showResult_handle = NULL;
 TaskHandle_t measBatt_handle = NULL;
 
+TestData t;
+testDataSplitter tds;
 
 void printBaroData(Adafruit_BMP3XX *bmp)
 {
@@ -57,9 +65,12 @@ void measBaro(void *parameters) {
           Serial.println("Failed to perform reading :(");
           return;
     }
-    cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
-    climb_rate = cur_height - prev_height;
-    prev_height = cur_height;
+    //cur_height = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+    //climb_rate = cur_height - prev_height;
+    //prev_height = cur_height;
+
+    t = tds.get_test_data();
+    climb_rate = t.up_acc;
     vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
@@ -165,7 +176,6 @@ void setup() {
                 &measBatt_handle);  /* Task handle. */
   }
   else digitalWrite(BATMEAS_EN, LOW);
-
 
   Serial.println("Setup Done");             
 }

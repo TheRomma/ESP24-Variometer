@@ -58,12 +58,7 @@ TestData testDataSplitter::get_test_data() {
 	tD.barometer = baro_raw.at(counter);
 	tD.up_acc = vel_down.at(counter);
 
-	if (small_counter == 40) {
-		counter = (counter + 1) % FLIGHT_ARRAY_SIZE;
-		small_counter = 0;
-	}
-
-	small_counter++;
+  counter = (counter + 1) % FLIGHT_ARRAY_SIZE;
 
 	return tD;
 }
