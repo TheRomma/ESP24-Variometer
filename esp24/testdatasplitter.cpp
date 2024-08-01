@@ -5,7 +5,7 @@
 #define FLIGHT_ARRAY_SIZE 2743
 
 /*
-* TestDataSplitter by Aleksanteri Sepp�
+* TestDataSplitter by Aleksanteri Seppa
 * 
 * Test data is from betaBison's test flight data. 
 * Data from: https://github.com/betaBison/gnss-sensor-fusion/blob/master/data/FLY084.csv
