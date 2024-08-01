@@ -1,11 +1,8 @@
-#include "testmodule.hpp"
+/*#include "testmodule.hpp"
 #include "fstream"
 #include "buzzer.hpp"
 #include "display.hpp"
 
-/*
-Selftest module for the project by Aleksanteri Seppä
-*/
 
 Buzzer buzzer;
 Display display;
@@ -37,4 +34,4 @@ void TestModule::barometerTest() {
 
 void TestModule::testFlight() {
 
-}
+}*/
